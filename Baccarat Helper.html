@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Baccarat Helper — Modern Glass (Full, Mobile+Autosave)</title>
+<style>
+  :root{
+    --bg:#060a16; --grad1:#0b1430; --grad2:#0a1026;
+    --glass:rgba(255,255,255,.05); --border:rgba(255,255,255,.10);
+    --muted:#9fb0d6; --text:#eef3ff; --shadow:0 14px 36px rgba(0,0,0,.45);
+    --radius:18px;
+    --b:#e74c3c; --p:#2e86de; --t:#2ecc71;
+    --ok:#25c06d; --warn:#ffb020; --bad:#ff5d6c;
+    --zoom: 1;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 800px at 10% -10%, #1a265a 0%, transparent 60%),
+      radial-gradient(1000px 700px at 120% 0%, #12245a 0%, transparent 55%),
+      linear-gradient(180deg, var(--grad1), var(--grad2));
+    color:var(--text);
+    font-family:Inter, ui-sans-serif, system-ui, Segoe UI, Prompt, sans-serif;
+    min-height:100svh;
+    padding:92px 20px 24px;
+    transform: scale(var(--zoom)); transform-origin: top left;
+    width: calc(100% / var(--zoom));
+  }
+  @media (pointer: coarse){ body{ transform:none; width:auto; } }
+
+  button, input, select { touch-action: manipulation; }
+
+  /* Header */
+  .header{
+    position:fixed; inset:0 0 auto 0; height:68px; z-index:10000;
+    display:flex; align-items:center; gap:12px; padding:10px 14px;
+    background:rgba(6,10,22,.78); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:900}
+  .badge{background:linear-gradient(140deg,#3b53ff33,#ff3b3b33); border:1px solid var(--border); padding:6px 10px; border-radius:999px; font-size:12px; color:#cfe1ff}
+  .spacer{flex:1}
+  .h-actions{display:flex; gap:8px}
+  .mini{border:none; border-radius:12px; padding:8px 12px; font-weight:900; color:#fff; cursor:pointer}
+  .mini.b{background:var(--b)} .mini.p{background:var(--p)} .mini.t{background:var(--t)}
+  .mini.u{background:#2b335f} .mini.r{background:#3a2a2a}
+  .h-callout{padding:8px 12px; border-radius:999px; font-weight:900; border:1px solid var(--border)}
+  .h-callout.playB{background:rgba(231,76,60,.25); border-color:rgba(231,76,60,.5)}
+  .h-callout.playP{background:rgba(46,134,222,.25); border-color:rgba(46,134,222,.5)}
+  .h-callout.skip{ background:rgba(255,93,108,.22); border-color:rgba(255,93,108,.45)}
+
+  /* >>> ซ่อนปุ่มด้านบนตามที่ขอ <<< */
+  .h-actions, #tbBadge { display:none !important; }
+
+  /* Layout */
+  .wrap{max-width:1200px; margin:0 auto; display:grid; gap:14px}
+  .grid{display:grid; grid-template-columns:1.1fr .9fr; gap:14px; align-items:start}
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+  .card{background:linear-gradient(180deg, var(--glass), transparent); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px}
+  .title{display:flex; align-items:center; gap:8px; justify-content:space-between; margin-bottom:8px}
+  .hint{font-size:12px; color:#9fb0d6}
+  .sticky{position:sticky; top:92px; align-self:start}
+  @media (max-width:980px){ .sticky{position:static} }
+
+  /* HUD */
+  .hud{display:grid; gap:10px}
+  .hud-row{
+    display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border:1px solid var(--border); border-radius:16px; padding:12px 14px;
+  }
+  .hud-pill{padding:12px 14px; border-radius:12px; min-width:110px; text-align:center; font-weight:900}
+  .hud-pill.playB{background:rgba(231,76,60,.18); border:1px solid rgba(231,76,60,.45); color:#ffd8d5}
+  .hud-pill.playP{background:rgba(46,134,222,.18); border:1px solid rgba(46,134,222,.45); color:#d6e8ff}
+  .hud-pill.skip{ background:rgba(255,93,108,.16); border:1px solid rgba(255,93,108,.42); color:#ffd3d8}
+  .reason{color:#c7d3ff; font-size:14px}
+
+  /* Quick summary */
+  .cycle-quick{
+    display:grid; gap:10px;
+    background:#0f1536cc; border:1px solid var(--border); border-radius:14px; padding:10px 12px;
+  }
+  .chips{display:flex; gap:8px; flex-wrap:wrap}
+  .chip{background:#0d1533; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:800; color:#cfe1ff; font-size:13px}
+
+  /* Recorder */
+  .buttons{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .btn{border:none; border-radius:12px; padding:10px 14px; font-weight:900; color:#fff; cursor:pointer; box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+  .btn.b{background:linear-gradient(180deg, var(--b), color-mix(in oklab, var(--b) 85%, black))}
+  .btn.p{background:linear-gradient(180deg, var(--p), color-mix(in oklab, var(--p) 85%, black))}
+  .btn.t{background:linear-gradient(180deg, var(--t), color-mix(in oklab, var(--t) 85%, black))}
+  .btn.u{background:#2b335f} .btn.r{background:#3a2a2a}
+  .timeline{display:flex; gap:6px; flex-wrap:wrap; padding:10px; border-radius:12px; background:#0e1430; border:1px solid var(--border); min-height:52px}
+  .dot{width:16px; height:16px; border-radius:50%; box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+  .dot.b{background:var(--b)} .dot.p{background:var(--p)} .dot.t{background:var(--t)}
+
+  /* Inline Stats: B P T + Total */
+  .inline-stats{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:8px; }
+  .stat-pill{ display:inline-flex; align-items:center; gap:8px; font-weight:800; color:#eaf1ff; }
+  .stat-pill .ball{
+    width:22px; height:22px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:900; font-size:12px; box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);
+  }
+  .ball.b{ background:var(--b); } .ball.p{ background:var(--p); } .ball.t{ background:var(--t); }
+  .stat-count{ font-size:18px; }
+  .stat-total{ margin-left:4px; font-size:18px; font-weight:900; }
+  .stat-total span{ margin-left:6px; }
+
+  /* Hit Columns */
+  .hitlist{ display:grid; grid-template-columns: repeat(6, minmax(72px,1fr)); gap:10px; margin-top:6px; }
+  .hit-col{ text-align:center; padding:6px 4px 10px; border-bottom:2px dashed var(--border); border-radius:4px; }
+  .hit-col.ok{ border-color:rgba(46,204,113,.55); }
+  .hit-col.fail{ border-color:rgba(255,93,108,.65); }
+  .hit-label{ font-size:12px; color:var(--muted); letter-spacing:.2px; }
+  .hit-val{ margin-top:4px; font-size:22px; font-weight:900; color:#eaf1ff; }
+  @media (max-width:600px){ .hitlist{ grid-template-columns: repeat(3, minmax(90px,1fr)); gap:8px; } .hit-val{ font-size:20px; } }
+
+  /* Controls */
+  .controls{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+  .group{background:#0e1533; border:1px solid var(--border); border-radius:12px; padding:10px}
+  .group label{font-size:12px; color:#9fb0d6; display:block; margin-bottom:6px}
+  .group input[type="number"], .group select, .group input[type="tel"]{
+    width:100%; background:#0a1130; color:#eef3ff; border:1px solid rgba(255,255,255,.12);
+    border-radius:10px; padding:8px 10px; font-weight:800
+  }
+
+  /* Collapsible */
+  .collapsible .title { position: relative; }
+  .collapse-btn{
+    border:1px solid var(--border); background:#0d1533; color:#cfe1ff;
+    border-radius:10px; padding:6px 10px; font-weight:800; cursor:pointer; margin-left:8px;
+  }
+  .collapsible .collapsible-body{ display:block; }
+  .collapsible.is-collapsed .collapsible-body{ display:none; }
+  .collapsible.is-collapsed{ padding-bottom:10px; }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">🂡 Baccarat Helper <span class="badge">Modern Glass UI</span></div>
+    <div class="h-actions">
+      <!-- ถูกซ่อนด้วย CSS แล้ว -->
+      <button class="mini b" id="tbB">B</button>
+      <button class="mini p" id="tbP">P</button>
+      <button class="mini t" id="tbT">T</button>
+      <button class="mini u" id="tbU">Undo</button>
+      <button class="mini r" id="tbR">Reset</button>
+    </div>
+    <div class="spacer"></div>
+    <span id="tbBadge" class="h-callout skip">SKIP</span>
+  </div>
+
+  <div class="wrap">
+    <!-- HUD -->
+    <section class="hud card">
+      <div class="hud-row">
+        <div id="hudBadge" class="hud-pill skip">SKIP</div>
+        <div class="reason" id="reason">เริ่มใช้งาน: บันทึกผล B/P/T สัก 6–10 ไม้เพื่อให้ระบบประเมิน</div>
+      </div>
+
+      <div class="cycle-quick" aria-label="สรุปรอบ">
+        <div class="chips">
+          <span class="chip" id="chipStatus">Cycle: IDLE</span>
+          <span class="chip" id="chipTry">รอสแกน</span>
+          <span class="chip" id="chipLast">Last: –</span>
+          <span class="chip" id="chipHitRate">HIT Rate: 0.0%</span>
+          <span class="chip" id="chipTotals">Rounds: 0 | HIT: 0 | FAIL: 0</span>
+        </div>
+
+        <!-- Hit columns -->
+        <div class="hitlist" aria-label="Hit summary">
+          <div class="hit-col ok"><div class="hit-label">ไม้1</div><div class="hit-val" id="h1Num">0</div></div>
+          <div class="hit-col ok"><div class="hit-label">ไม้2</div><div class="hit-val" id="h2Num">0</div></div>
+          <div class="hit-col ok"><div class="hit-label">ไม้3</div><div class="hit-val" id="h3Num">0</div></div>
+          <div class="hit-col ok"><div class="hit-label">ไม้4</div><div class="hit-val" id="h4Num">0</div></div>
+          <div class="hit-col ok"><div class="hit-label">ไม้5</div><div class="hit-val" id="h5Num">0</div></div>
+          <div class="hit-col fail"><div class="hit-label">FAIL</div><div class="hit-val" id="failNum">0</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <!-- LEFT: Recorder -->
+      <section class="card sticky">
+        <div class="title">
+          <strong>บันทึกผลตาออก</strong>
+          <span class="hint">คีย์ลัด: B / P / T / U / R</span>
+        </div>
+
+        <div class="buttons">
+          <button class="btn b" id="btnB">Banker (B)</button>
+          <button class="btn p" id="btnP">Player (P)</button>
+          <button class="btn t" id="btnT">Tie (T)</button>
+          <button class="btn u" id="btnUndo">Undo</button>
+          <button class="btn r" id="btnReset">Reset</button>
+        </div>
+
+        <div class="timeline" id="timeline" title="ผลย้อนหลัง (ล่าสุดอยู่ขวา)"></div>
+
+        <!-- Inline stats -->
+        <div class="inline-stats" aria-label="B P T Total">
+          <span class="stat-pill" title="Banker ทั้งหมด"><span class="ball b">B</span><span class="stat-count" id="stB">0</span></span>
+          <span class="stat-pill" title="Player ทั้งหมด"><span class="ball p">P</span><span class="stat-count" id="stP">0</span></span>
+          <span class="stat-pill" title="Tie ทั้งหมด"><span class="ball t">T</span><span class="stat-count" id="stT">0</span></span>
+          <span class="stat-total" title="จำนวนตาที่บันทึกทั้งหมด">Total <span id="stN">0</span></span>
+        </div>
+      </section>
+
+      <!-- RIGHT: Filters + Cycle -->
+      <section class="card sticky collapsible" id="settingsSection">
+        <div class="title">
+          <strong>ตัวกรอง & เงื่อนไขเข้า</strong>
+          <div class="hint">ลอจิกเดิม</div>
+          <button class="collapse-btn" id="btnColSettings" aria-expanded="true">ย่อ</button>
+        </div>
+
+        <div class="collapsible-body" id="settingsBody">
+          <div class="controls" style="margin-bottom:8px">
+            <div class="group">
+              <label>โหมดเข้า</label>
+              <select id="entryMode">
+                <option value="BONLY">Banker-only</option>
+                <option value="TWOSIDED">Two-Sided (B หรือ P)</option>
+              </select>
+            </div>
+            <div class="group">
+              <label>หน้าต่างคำนวณ (N)</label>
+              <input type="number" id="winN" value="8" min="3" max="30" />
+            </div>
+            <div class="group">
+              <label>เกณฑ์ p̂ (≥)</label>
+              <input type="number" id="thr" value="0.52" min="0.50" max="0.65" step="0.01" />
+            </div>
+            <div class="group">
+              <label>กันปิงปอง (สลับ ≥)</label>
+              <input type="number" id="antiPing" value="4" min="3" max="8" />
+            </div>
+            <div class="group switch">
+              <label for="skipAfterTie">Skip หลัง Tie 1 ไม้</label>
+              <input id="skipAfterTie" type="checkbox" checked />
+            </div>
+            <div class="group switch">
+              <label for="useEMA">ใช้ EMA Window</label>
+              <input id="useEMA" type="checkbox" />
+            </div>
+            <div class="group">
+              <label>EMA α (0.10–0.60)</label>
+              <input type="number" id="emaAlpha" value="0.30" step="0.05" min="0.10" max="0.60" />
+            </div>
+            <div class="group">
+              <label>ข้อมูลในหน้าต่าง (BP)</label>
+              <div class="v" id="winCount" style="margin-top:6px">0</div>
+            </div>
+            <div class="group">
+              <label>p̂_B</label>
+              <div class="v" id="pHatB" style="margin-top:6px">–</div>
+            </div>
+            <div class="group">
+              <label>p̂_P</label>
+              <div class="v" id="pHatP" style="margin-top:6px">–</div>
+            </div>
+            <div class="group">
+              <label>ความยาวปิงปองล่าสุด</label>
+              <div class="v" id="altLen" style="margin-top:6px">0</div>
+            </div>
+
+            <!-- ขนาด UI -->
+            <div class="group">
+              <label for="uiScale">ขนาด UI (80%–130%)</label>
+              <input id="uiScale" type="range" min="0.8" max="1.3" step="0.05" value="1" />
+              <div class="hint" id="uiScaleHint" style="margin-top:6px">100%</div>
+            </div>
+          </div>
+
+          <div class="title">
+            <strong>ตั้งค่ารอบ “3/4 กิน 1”</strong>
+            <span class="hint">HIT → พัก | MISS → ลองต่อ</span>
+          </div>
+
+          <div class="controls">
+            <div class="group">
+              <label>Cycle Max Tries (N)</label>
+              <select id="cycleMax">
+                <option value="3">3 (3 กิน 1)</option>
+                <option value="4" selected>4 (4 กิน 1)</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+            <div class="group">
+              <label>Pause หลัง HIT (ไม้)</label>
+              <input type="tel" inputmode="numeric" pattern="[0-9]*" id="pauseHands" value="2" />
+            </div>
+            <div class="group switch">
+              <label for="tieNoCount">Tie ไม่นับในรอบ</label>
+              <input id="tieNoCount" type="checkbox" checked />
+            </div>
+          </div>
+
+          <div class="chips">
+            <span class="chip" id="cyStatus">Cycle: IDLE</span>
+            <span class="chip" id="cyDetail">–</span>
+            <span class="chip" id="cyLast">Last Suggested: –</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="hint" style="margin-top:6px">
+      เครื่องมือนี้ช่วย “วินัยและความสม่ำเสมอ” แต่ไม่การันตีกำไร—โปรดใช้ด้วยความรับผิดชอบ 🙏
+    </section>
+  </div>
+
+<script>
+(function(){
+  /* ---------- Storage helpers ---------- */
+  const STORAGE_KEY = 'bh-state-v1';
+  function storageAvailable(type){
+    try{ const s=window[type]; const x='__t__'; s.setItem(x,x); s.removeItem(x); return true; }catch(e){ return false; }
+  }
+  const CAN_LOCAL = storageAvailable('localStorage');
+  const CAN_SESS  = storageAvailable('sessionStorage');
+  function writeStore(str){
+    try{ if(CAN_LOCAL){ localStorage.setItem(STORAGE_KEY,str); return true; } }catch(e){}
+    try{ if(CAN_SESS){ sessionStorage.setItem(STORAGE_KEY,str); return true; } }catch(e){}
+    try{
+      const enc=encodeURIComponent(str), base=location.href.split('#')[0];
+      history.replaceState(null,'', base + '#state=' + enc);
+      return true;
+    }catch(e){ return false; }
+  }
+  function readStore(){
+    try{ if(CAN_LOCAL){ const s=localStorage.getItem(STORAGE_KEY); if(s) return s; } }catch(e){}
+    try{ if(CAN_SESS){ const s=sessionStorage.getItem(STORAGE_KEY); if(s) return s; } }catch(e){}
+    const m = location.hash.match(/#state=([^&]+)/); if(m){ try{ return decodeURIComponent(m[1]); }catch(e){} }
+    return null;
+  }
+  function clearStore(){
+    try{ if(CAN_LOCAL) localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    try{ if(CAN_SESS)  sessionStorage.removeItem(STORAGE_KEY); }catch(e){}
+    try{ history.replaceState(null,'', location.href.split('#')[0]); }catch(e){}
+  }
+
+  /* ---------- App State ---------- */
+  const state = {
+    seq: [],
+    cycle: { active:false, max:4, tries:0, pauseRemain:0,
+             pendingSignal:null, pendingIndex:-1, lastSuggested:'–' },
+    cycleStats: { hitsAt:{1:0,2:0,3:0,4:0,5:0}, fail:0, total:0 }
+  };
+
+  const $ = id => document.getElementById(id);
+  const el = {
+    hudBadge: $('hudBadge'), reason: $('reason'),
+    tbB:$('tbB'), tbP:$('tbP'), tbT:$('tbT'), tbU:$('tbU'), tbR:$('tbR'), tbBadge:$('tbBadge'),
+    timeline:$('timeline'), stN:$('stN'), stB:$('stB'), stP:$('stP'), stT:$('stT'),
+    btnB:$('btnB'), btnP:$('btnP'), btnT:$('btnT'), btnUndo:$('btnUndo'), btnReset:$('btnReset'),
+    entryMode:$('entryMode'), winN:$('winN'), thr:$('thr'), antiPing:$('antiPing'),
+    skipAfterTie:$('skipAfterTie'), useEMA:$('useEMA'), emaAlpha:$('emaAlpha'),
+    pHatB:$('pHatB'), pHatP:$('pHatP'), altLen:$('altLen'), winCount:$('winCount'),
+    cycleMax:$('cycleMax'), pauseHands:$('pauseHands'), tieNoCount:$('tieNoCount'),
+    chipStatus:$('chipStatus'), chipTry:$('chipTry'), chipLast:$('chipLast'),
+    chipHitRate:$('chipHitRate'), chipTotals:$('chipTotals'),
+    cyStatus:$('cyStatus'), cyDetail:$('cyDetail'), cyLast:$('cyLast'),
+    h1Num:$('h1Num'), h2Num:$('h2Num'), h3Num:$('h3Num'), h4Num:$('h4Num'), h5Num:$('h5Num'), failNum:$('failNum'),
+    uiScale: $('uiScale'), uiScaleHint: $('uiScaleHint'),
+    settingsSection: $('settingsSection'), btnColSettings: $('btnColSettings')
+  };
+
+  /* ---------- Helpers ---------- */
+  function clamp(x,a,b){ return Math.min(Math.max(+x||0,a),b); }
+  const bpOnly = s => s.filter(x=>x==='B'||x==='P');
+  function alternationLen(s){ const bp=bpOnly(s); if(bp.length<=1) return 0; let len=1; for(let i=bp.length-1;i>0;i--){ if(bp[i]!==bp[i-1]) len++; else break; } return len; }
+  function lastWindowBP(s,N){ const bp=bpOnly(s); return bp.slice(Math.max(0,bp.length-N)); }
+  function laplaceFromWindow(win){ const B=win.filter(x=>x==='B').length, P=win.length-B, Np=win.length; return { pB:(B+1)/(Np+2), pP:(P+1)/(Np+2), Np }; }
+  function laplaceFromEMA(seq,alpha){
+    const bp=bpOnly(seq); let accB=0,accP=0;
+    bp.forEach(x=>{ accB=(1-alpha)*accB+(x==='B'?alpha:0); accP=(1-alpha)*accP+(x==='P'?alpha:0); });
+    const wB=accB,wP=accP,wT=wB+wP; return { pB:(wB+1)/(wT+2), pP:(wP+1)/(wT+2), Np:Math.round(wT) };
+  }
+  function applyZoom(v){
+    const z = Math.min(Math.max(parseFloat(v)||1, 0.8), 1.3);
+    document.documentElement.style.setProperty('--zoom', z);
+    if (el.uiScaleHint) el.uiScaleHint.textContent = Math.round(z*100)+'%';
+  }
+  function setCollapsed(sectionEl, btnEl, collapsed){
+    if(!sectionEl || !btnEl) return;
+    sectionEl.classList.toggle('is-collapsed', !!collapsed);
+    btnEl.textContent = collapsed ? 'ขยาย' : 'ย่อ';
+    btnEl.setAttribute('aria-expanded', (!collapsed).toString());
+  }
+
+  /* ---------- Save / Restore ---------- */
+  function serializeAll(){
+    return JSON.stringify({
+      seq: state.seq,
+      cycleStats: state.cycleStats,
+      settings: {
+        entryMode: el.entryMode.value,
+        winN: el.winN.value, thr: el.thr.value, antiPing: el.antiPing.value,
+        skipAfterTie: el.skipAfterTie.checked,
+        useEMA: el.useEMA.checked, emaAlpha: el.emaAlpha.value,
+        cycleMax: el.cycleMax.value, pauseHands: el.pauseHands.value,
+        tieNoCount: el.tieNoCount.checked,
+        zoom: el.uiScale ? el.uiScale.value : 1,
+        collapsed: { settings: el.settingsSection?.classList.contains('is-collapsed') || false }
+      }
+    });
+  }
+  function saveAll(){ writeStore(serializeAll()); }
+  function restoreAll(){
+    const raw = readStore(); if(!raw) return;
+    try{
+      const data = JSON.parse(raw), s=data.settings||{};
+      if (s.entryMode) el.entryMode.value = s.entryMode;
+      if (s.winN) el.winN.value = s.winN;
+      if (s.thr) el.thr.value = s.thr;
+      if (s.antiPing) el.antiPing.value = s.antiPing;
+      if ('skipAfterTie' in s) el.skipAfterTie.checked = !!s.skipAfterTie;
+      if ('useEMA' in s) el.useEMA.checked = !!s.useEMA;
+      if (s.emaAlpha) el.emaAlpha.value = s.emaAlpha;
+      if (s.cycleMax) el.cycleMax.value = s.cycleMax;
+      if (s.pauseHands!=null) el.pauseHands.value = s.pauseHands;
+      if ('tieNoCount' in s) el.tieNoCount.checked = !!s.tieNoCount;
+      if (s.zoom) applyZoom(s.zoom); else applyZoom(1);
+      if (s.collapsed && typeof s.collapsed.settings === 'boolean'){
+        setCollapsed(el.settingsSection, el.btnColSettings, s.collapsed.settings);
+      }
+      const seq = Array.isArray(data.seq) ? data.seq : [];
+      if (seq.length) replayAll(seq);
+      if (data.cycleStats) { state.cycleStats = data.cycleStats; renderCycleSummary(); }
+    }catch(e){ console.warn('Restore failed:', e); }
+  }
+  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState!=='visible') saveAll(); });
+  window.addEventListener('pagehide', saveAll);
+  setInterval(saveAll, 2000);
+
+  /* ---------- Renderers ---------- */
+  function renderTimeline(){
+    el.timeline.innerHTML='';
+    state.seq.forEach(ch=>{
+      const d=document.createElement('div'); d.className='dot '+ch.toLowerCase(); d.title=ch; el.timeline.appendChild(d);
+    });
+  }
+  function statsAll(){
+    const n=state.seq.length, b=state.seq.filter(x=>x==='B').length, p=state.seq.filter(x=>x==='P').length, t=n-b-p;
+    el.stN.textContent=n; el.stB.textContent=b; el.stP.textContent=p; el.stT.textContent=t;
+  }
+  function setHUD(kind,text){
+    el.reason.textContent=text||'';
+    if(kind==='PLAY_B'){ el.hudBadge.className='hud-pill playB'; el.hudBadge.textContent='PLAY B'; }
+    else if(kind==='PLAY_P'){ el.hudBadge.className='hud-pill playP'; el.hudBadge.textContent='PLAY P'; }
+    else{ el.hudBadge.className='hud-pill skip'; el.hudBadge.textContent='SKIP'; }
+  }
+  function setCycle(status, detail, last){
+    el.chipStatus.textContent = `Cycle: ${status}`;
+    el.chipTry.textContent = detail || 'รอสแกน';
+    el.chipLast.textContent = `Last: ${last||'–'}`;
+    el.cyStatus.textContent = `Cycle: ${status}`;
+    el.cyDetail.textContent = detail || '–';
+    el.cyLast.textContent = `Last Suggested: ${last||'–'}`;
+  }
+  function renderCycleSummary(){
+    const H=state.cycleStats.hitsAt, total=state.cycleStats.total, fail=state.cycleStats.fail;
+    const vals = [H[1]||0,H[2]||0,H[3]||0,H[4]||0,H[5]||0,fail||0];
+    const hitSum = vals.slice(0,5).reduce((a,b)=>a+b,0);
+    const rate = total ? (100*hitSum/total).toFixed(1) : '0.0';
+    el.chipHitRate.textContent = `HIT Rate: ${rate}%`;
+    el.chipTotals.textContent = `Rounds: ${total} | HIT: ${hitSum} | FAIL: ${fail}`;
+    el.h1Num.textContent = vals[0]; el.h2Num.textContent = vals[1]; el.h3Num.textContent = vals[2];
+    el.h4Num.textContent = vals[3]; el.h5Num.textContent = vals[4]; el.failNum.textContent = vals[5];
+  }
+
+  /* ---------- UI metrics updater (เพิ่มใหม่) ---------- */
+  function updateMetricsUI({pB, pP, Np, altL}){
+    if (el.pHatB) el.pHatB.textContent = isFinite(pB) ? pB.toFixed(3) : '–';
+    if (el.pHatP) el.pHatP.textContent = isFinite(pP) ? pP.toFixed(3) : '–';
+    if (el.winCount) el.winCount.textContent = String(Np||0);
+    if (el.altLen) el.altLen.textContent = String(altL||0);
+  }
+
+  /* ---------- Decision + Cycle ---------- */
+  function decide(){
+    const N = clamp(el.winN.value,3,50);
+    const thr = Math.min(Math.max(parseFloat(el.thr.value||'0.52'),0.5),0.75);
+    const antiPingLen = clamp(el.antiPing.value,3,10);
+    const useEMA = el.useEMA.checked;
+    const alpha = Math.min(Math.max(parseFloat(el.emaAlpha.value||'0.30'),0.10),0.60);
+    const mode = el.entryMode.value;
+    state.cycle.max = parseInt(el.cycleMax.value,10);
+    const pauseCfg = clamp(el.pauseHands.value,0,10);
+    el.pauseHands.value = String(pauseCfg);
+
+    if(state.cycle.pauseRemain>0){
+      setHUD('SKIP',`พักหลัง HIT • เหลือ ${state.cycle.pauseRemain} ไม้`);
+      setCycle('PAUSE',`พัก ${state.cycle.pauseRemain} ไม้`,state.cycle.lastSuggested);
+      renderCycleSummary();
+      /* อัปเดตตัวเลขบน UI ด้วย */
+      updateMetricsUI({pB:NaN,pP:NaN,Np:bpOnly(state.seq).length,altL:alternationLen(state.seq)});
+      return;
+    }
+
+    const seq=state.seq; const last=seq[seq.length-1];
+    const altL = alternationLen(seq);
+    const antiPingActive = altL >= antiPingLen;
+
+    const r = useEMA ? laplaceFromEMA(seq,alpha) : laplaceFromWindow(lastWindowBP(seq,N));
+    const {pB,pP,Np} = r;
+    updateMetricsUI({pB,pP,Np,altL}); // ← อัปเดตหน้าจอทุกครั้งที่คำนวณ
+
+    if(Np===0){
+      setHUD('SKIP','ยังไม่มีข้อมูล B/P เพียงพอ');
+      setCycle(state.cycle.active?'ACTIVE':'IDLE', state.cycle.active?`Try ${state.cycle.tries+1}/${state.cycle.max}`:'รอสแกน', state.cycle.lastSuggested);
+      renderCycleSummary(); return;
+    }
+    if(antiPingActive){
+      setHUD('SKIP',`กันปิงปอง: สลับยาว ${altL} ไม้`);
+      setCycle(state.cycle.active?'ACTIVE':'IDLE', state.cycle.active?`Try ${state.cycle.tries+1}/${state.cycle.max}`:'รอสแกน', state.cycle.lastSuggested);
+      renderCycleSummary(); return;
+    }
+
+    const passB = pB>=thr, passP = pP>=thr;
+    let suggested=null, txt='';
+    if(mode==='BONLY'){ if(passB){ suggested='B'; txt=`p̂_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; } }
+    else{
+      if(passB && (!passP || pB>=pP)){ suggested='B'; txt=`p̂_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; }
+      else if(passP && (!passB || pP>pB)){ suggested='P'; txt=`p̂_P = ${pP.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง P`; }
+    }
+
+    if(suggested){
+      setHUD(suggested==='B'?'PLAY_B':'PLAY_P', txt);
+      state.cycle.pendingSignal=suggested; state.cycle.pendingIndex=state.seq.length; state.cycle.lastSuggested=suggested;
+      if(!state.cycle.active){ state.cycle.active=true; state.cycle.tries=0; }
+      setCycle('ACTIVE',`Try ${state.cycle.tries+1}/${state.cycle.max}`,state.cycle.lastSuggested);
+    }else{
+      setHUD('SKIP',`p̂_B=${pB.toFixed(3)}, p̂_P=${pP.toFixed(3)} (thr=${thr.toFixed(2)})`);
+      setCycle(state.cycle.active?'ACTIVE':'IDLE', state.cycle.active?`Try ${state.cycle.tries+1}/${state.cycle.max}`:'รอสแกน', state.cycle.lastSuggested);
+    }
+    renderCycleSummary();
+  }
+
+  function hitAndPause(){
+    const tryIndex = (state.cycle.tries||0) + 1;
+    const k = Math.min(5, tryIndex);
+    state.cycleStats.hitsAt[k] = (state.cycleStats.hitsAt[k]||0) + 1;
+    state.cycleStats.total += 1;
+    renderCycleSummary();
+
+    const pause=clamp(el.pauseHands.value,0,10);
+    state.cycle.active=false; state.cycle.tries=0; state.cycle.pauseRemain=pause;
+    setCycle('HIT',`พัก ${pause} ไม้`, state.cycle.lastSuggested);
+  }
+  function missOrFail(){
+    const Nmax=state.cycle.max; if(!state.cycle.active) return;
+    if(state.cycle.tries+1>=Nmax){
+      state.cycle.active=false; state.cycle.tries=0;
+      state.cycleStats.fail += 1; state.cycleStats.total += 1;
+      renderCycleSummary();
+      setCycle('FAIL','ครบ Max Tries แล้วยังไม่ HIT', state.cycle.lastSuggested);
+    }else{
+      state.cycle.tries+=1;
+      setCycle('ACTIVE',`Try ${state.cycle.tries+1}/${state.cycle.max}`, state.cycle.lastSuggested);
+    }
+  }
+
+  function resetCycle(){ return { active:false, max: parseInt(el.cycleMax.value,10), tries:0, pauseRemain:0, pendingSignal:null, pendingIndex:-1, lastSuggested:'–' }; }
+  function resetCycleStats(){ state.cycleStats = { hitsAt:{1:0,2:0,3:0,4:0,5:0}, fail:0, total:0 }; renderCycleSummary(); }
+  function replayAll(seq){
+    state.seq = []; state.cycle = resetCycle(); resetCycleStats();
+    renderTimeline(); statsAll();
+    for(const ch of seq){
+      decide(); state.seq.push(ch); renderTimeline(); statsAll(); afterRecord(ch);
+    }
+    decide();
+  }
+
+  function push(ch){ state.seq.push(ch); renderTimeline(); statsAll(); afterRecord(ch); decide(); saveAll(); }
+  function afterRecord(outcome){
+    if(state.cycle.pauseRemain>0){ state.cycle.pauseRemain--; return; }
+    if(state.cycle.pendingSignal!=null && state.cycle.pendingIndex===state.seq.length-1){
+      const side=state.cycle.pendingSignal; state.cycle.pendingSignal=null; state.cycle.pendingIndex=-1;
+      if(outcome==='T'){ if(el.tieNoCount.checked){return;} else {missOrFail(); saveAll(); return;} }
+      if(outcome===side) hitAndPause(); else missOrFail();
+      saveAll();
+    }
+  }
+
+  el.btnB.onclick=()=>push('B'); el.btnP.onclick=()=>push('P'); el.btnT.onclick=()=>push('T');
+  el.btnUndo.onclick=()=>{ if(state.seq.length===0) return; replayAll(state.seq.slice(0,-1)); saveAll(); };
+  el.btnReset.onclick=()=>{ if(confirm('ล้างข้อมูลทั้งหมดและรีเซ็ตสถานะใช่ไหม?')){ state.seq=[]; state.cycle=resetCycle(); resetCycleStats(); renderTimeline(); statsAll(); decide(); clearStore(); } };
+
+  // Header mirrors (ถูกซ่อน แต่ยังคงทำงานได้ถ้าเปิด CSS กลับ)
+  if (el.tbB) el.tbB.onclick=()=>el.btnB.click();
+  if (el.tbP) el.tbP.onclick=()=>el.btnP.click();
+  if (el.tbT) el.tbT.onclick=()=>el.btnT.click();
+  if (el.tbU) el.tbU.onclick=()=>el.btnUndo.click();
+  if (el.tbR) el.tbR.onclick=()=>el.btnReset.click();
+
+  // คีย์ลัด B / P / T / U / R (ยกเว้นตอนโฟกัสอยู่ใน input/select/textarea)
+  document.addEventListener('keydown', (e)=>{
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (['INPUT','SELECT','TEXTAREA'].includes(tag)) return;
+    const k = e.key.toLowerCase();
+    if (k==='b') { el.btnB.click(); }
+    else if (k==='p') { el.btnP.click(); }
+    else if (k==='t') { el.btnT.click(); }
+    else if (k==='u') { el.btnUndo.click(); }
+    else if (k==='r') { el.btnReset.click(); }
+  });
+
+  ['entryMode','winN','thr','antiPing','skipAfterTie','useEMA','emaAlpha','cycleMax','tieNoCount']
+    .forEach(id=>{
+      $(id).addEventListener('input', ()=>{ decide(); saveAll(); });
+      $(id).addEventListener('change', ()=>{ decide(); saveAll(); });
+    });
+
+  el.pauseHands.addEventListener('input', ()=>{
+    const digits = (el.pauseHands.value||'').replace(/[^\d]/g,'').slice(0,2);
+    el.pauseHands.value = digits;
+  });
+  el.pauseHands.addEventListener('change', ()=>{ el.pauseHands.value = String(clamp(el.pauseHands.value,0,10)); decide(); saveAll(); });
+
+  if (el.uiScale){
+    el.uiScale.addEventListener('input', ()=>{ applyZoom(el.uiScale.value); saveAll(); });
+    applyZoom(1);
+  }
+
+  if (el.btnColSettings){
+    el.btnColSettings.addEventListener('click', ()=>{
+      const next = !el.settingsSection.classList.contains('is-collapsed');
+      setCollapsed(el.settingsSection, el.btnColSettings, next); saveAll();
+    });
+  }
+
+  renderTimeline(); statsAll(); renderCycleSummary(); decide();
+  restoreAll();
+})();
+</script>
+</body>
+</html>
