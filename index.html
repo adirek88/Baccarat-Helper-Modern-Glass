@@ -230,10 +230,10 @@
             </div>
             <div class="group">
               <label>หน้าต่างคำนวณ (N)</label>
-              <input type="number" id="winN" value="8" min="3" max="30" />
+              <input type="number" id="winN" value="8" min="3" max="50" />
             </div>
             <div class="group">
-              <label>เกณฑ์ \u005chat p (≥)</label>
+              <label>เกณฑ์ p̂ (≥)</label>
               <input type="number" id="thr" value="0.52" min="0.50" max="0.65" step="0.01" />
             </div>
             <div class="group">
@@ -257,11 +257,11 @@
               <div class="v" id="winCount" style="margin-top:6px">0</div>
             </div>
             <div class="group">
-              <label>\u005chat p_B</label>
+              <label>p̂_B</label>
               <div class="v" id="pHatB" style="margin-top:6px">–</div>
             </div>
             <div class="group">
-              <label>\u005chat p_P</label>
+              <label>p̂_P</label>
               <div class="v" id="pHatP" style="margin-top:6px">–</div>
             </div>
             <div class="group">
@@ -450,11 +450,18 @@
     const n=state.seq.length, b=state.seq.filter(x=>x==='B').length, p=state.seq.filter(x=>x==='P').length, t=n-b-p;
     el.stN.textContent=n; el.stB.textContent=b; el.stP.textContent=p; el.stT.textContent=t;
   }
+  function mirrorHeader(kind,text){
+    if(!el.tbBadge) return;
+    el.tbBadge.textContent = (kind==='PLAY_B'?'PLAY B': kind==='PLAY_P'?'PLAY P':'SKIP');
+    el.tbBadge.className = 'h-callout ' + (kind==='PLAY_B'?'playB': kind==='PLAY_P'?'playP':'skip');
+    el.tbBadge.title = text || '';
+  }
   function setHUD(kind,text){
     el.reason.textContent=text||'';
     if(kind==='PLAY_B'){ el.hudBadge.className='hud-pill playB'; el.hudBadge.textContent='PLAY B'; }
     else if(kind==='PLAY_P'){ el.hudBadge.className='hud-pill playP'; el.hudBadge.textContent='PLAY P'; }
     else{ el.hudBadge.className='hud-pill skip'; el.hudBadge.textContent='SKIP'; }
+    mirrorHeader(kind,text);
   }
   function setCycle(status, detail, last){
     el.chipStatus.textContent = `Cycle: ${status}`;
@@ -505,6 +512,12 @@
     const r = useEMA ? laplaceFromEMA(seq,alpha) : laplaceFromWindow(lastWindowBP(seq,N));
     const {pB,pP,Np} = r;
 
+    // อัปเดตค่าสถิติแสดงผล
+    el.altLen.textContent = String(altL);
+    el.winCount.textContent = String(useEMA ? Np : Math.min(bpOnly(seq).length, N));
+    el.pHatB.textContent = (Np ? pB.toFixed(3) : '–');
+    el.pHatP.textContent = (Np ? pP.toFixed(3) : '–');
+
     if(Np===0){
       setHUD('SKIP','ยังไม่มีข้อมูล B/P เพียงพอ');
       setCycle(state.cycle.active?'ACTIVE':'IDLE', state.cycle.active?`Try ${state.cycle.tries+1}/${state.cycle.max}`:'รอสแกน', state.cycle.lastSuggested);
@@ -518,10 +531,10 @@
 
     const passB = pB>=thr, passP = pP>=thr;
     let suggested=null, txt='';
-    if(mode==='BONLY'){ if(passB){ suggested='B'; txt=`\u005chat p_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; } }
+    if(mode==='BONLY'){ if(passB){ suggested='B'; txt=`p̂_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; } }
     else{
-      if(passB && (!passP || pB>=pP)){ suggested='B'; txt=`\u005chat p_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; }
-      else if(passP && (!passB || pP>pB)){ suggested='P'; txt=`\u005chat p_P = ${pP.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง P`; }
+      if(passB && (!passP || pB>=pP)){ suggested='B'; txt=`p̂_B = ${pB.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง B`; }
+      else if(passP && (!passB || pP>pB)){ suggested='P'; txt=`p̂_P = ${pP.toFixed(3)} ≥ ${thr.toFixed(2)} ➜ แทง P`; }
     }
 
     if(suggested){
@@ -530,7 +543,7 @@
       if(!state.cycle.active){ state.cycle.active=true; state.cycle.tries=0; }
       setCycle('ACTIVE',`Try ${state.cycle.tries+1}/${state.cycle.max}`,state.cycle.lastSuggested);
     }else{
-      setHUD('SKIP',`\u005chat p_B=${pB.toFixed(3)}, p_P=${pP.toFixed(3)} (thr=${thr.toFixed(2)})`);
+      setHUD('SKIP',`p̂_B=${pB.toFixed(3)}, p̂_P=${pP.toFixed(3)} (thr=${thr.toFixed(2)})`);
       setCycle(state.cycle.active?'ACTIVE':'IDLE', state.cycle.active?`Try ${state.cycle.tries+1}/${state.cycle.max}`:'รอสแกน', state.cycle.lastSuggested);
     }
     renderCycleSummary();
@@ -582,13 +595,30 @@
     }
   }
 
+  // ปุ่มหลัก
   el.btnB.onclick=()=>push('B'); el.btnP.onclick=()=>push('P'); el.btnT.onclick=()=>push('T');
   el.btnUndo.onclick=()=>{ if(state.seq.length===0) return; replayAll(state.seq.slice(0,-1)); saveAll(); };
   el.btnReset.onclick=()=>{ if(confirm('ล้างข้อมูลทั้งหมดและรีเซ็ตสถานะใช่ไหม?')){ state.seq=[]; state.cycle=resetCycle(); resetCycleStats(); renderTimeline(); statsAll(); decide(); clearStore(); } };
 
   // Header mirrors (ถูกซ่อน แต่ยังคงทำงานได้ถ้าเปิด CSS กลับ)
-  $('tbB').onclick=()=>el.btnB.click(); $('tbP').onclick=()=>el.btnP.click(); $('tbT').onclick=()=>el.btnT.click();
-  $('tbU').onclick=()=>el.btnUndo.click(); $('tbR').onclick=()=>el.btnReset.click();
+  if ($('tbB')) $('tbB').onclick=()=>el.btnB.click();
+  if ($('tbP')) $('tbP').onclick=()=>el.btnP.click();
+  if ($('tbT')) $('tbT').onclick=()=>el.btnT.click();
+  if ($('tbU')) $('tbU').onclick=()=>el.btnUndo.click();
+  if ($('tbR')) $('tbR').onclick=()=>el.btnReset.click();
+
+  // คีย์ลัดจริง
+  window.addEventListener('keydown', (ev)=>{
+    const k = ev.key?.toLowerCase();
+    if(['b','p','t','u','r'].includes(k)){
+      ev.preventDefault();
+      if(k==='b') el.btnB.click();
+      else if(k==='p') el.btnP.click();
+      else if(k==='t') el.btnT.click();
+      else if(k==='u') el.btnUndo.click();
+      else if(k==='r') el.btnReset.click();
+    }
+  });
 
   ['entryMode','winN','thr','antiPing','skipAfterTie','useEMA','emaAlpha','cycleMax','tieNoCount']
     .forEach(id=>{
